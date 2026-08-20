@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AOI 불량 관리 대시보드</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600&display=swap');
+
+:root{
+  --navy:#16324F;
+  --navy-light:#274A6E;
+  --steel:#5B7A99;
+  --bg:#F2F4F7;
+  --card:#FFFFFF;
+  --line:#E1E5EB;
+  --text:#1A2531;
+  --text-sub:#5C6B7A;
+  --amber:#D97706;
+  --amber-bg:#FEF3E2;
+  --red:#C0392B;
+  --red-bg:#FBEAE8;
+  --green:#1E7A46;
+  --green-bg:#E7F5EC;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+.mono{font-family:'JetBrains Mono',monospace;}
+.wrap{max-width:980px;margin:0 auto;padding:0 0 3rem;}
+header{background:var(--navy);color:#fff;padding:1.5rem 2rem;}
+header h1{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:600;margin:0 0 4px;}
+header p{margin:0;font-size:13px;color:#B9C7D6;}
+.tabs{display:flex;gap:4px;background:var(--navy-light);padding:0 2rem;}
+.tab{padding:12px 18px;font-size:14px;font-weight:500;color:#C9D6E3;cursor:pointer;border-bottom:3px solid transparent;transition:0.15s;}
+.tab.active{color:#fff;border-bottom-color:var(--amber);}
+.tab.disabled{opacity:0.4;cursor:not-allowed;}
+.content{padding:1.5rem 2rem;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:1.25rem 1.5rem;margin-bottom:1.25rem;}
+.card h2{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;margin:0 0 1rem;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+label{display:block;font-size:12px;color:var(--text-sub);margin-bottom:4px;font-weight:500;}
+input,select{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;font-size:14px;font-family:inherit;background:#fff;color:var(--text);}
+input:focus,select:focus{outline:none;border-color:var(--steel);}
+.field{margin-bottom:12px;}
+.line-toggle{display:flex;gap:8px;}
+.line-btn{flex:1;padding:10px;border:1.5px solid var(--line);border-radius:6px;text-align:center;font-size:14px;font-weight:500;cursor:pointer;background:#fff;}
+.line-btn.selected{background:var(--navy);color:#fff;border-color:var(--navy);}
+.defect-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:8px;}
+.defect-btn{padding:16px 8px;border:1.5px solid var(--line);background:#fff;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;transition:0.12s;color:var(--text);}
+.defect-btn:hover{border-color:var(--red);background:var(--red-bg);}
+.defect-btn:active{transform:scale(0.97);}
+.btn-primary{background:var(--navy);color:#fff;border:none;padding:11px 20px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;}
+.btn-primary:hover{background:var(--navy-light);}
+.btn-primary:disabled{background:#B7C0CA;color:#EEF1F4;cursor:not-allowed;}
+.btn-primary:disabled:hover{background:#B7C0CA;}
+.warn-msg{color:var(--red);font-size:12px;font-weight:500;}
+.btn-ghost{background:none;border:1px solid var(--line);color:var(--text-sub);padding:8px 14px;border-radius:6px;font-size:13px;cursor:pointer;}
+.stat{background:#F8F9FB;border-radius:8px;padding:14px 16px;}
+.stat .label{font-size:12px;color:var(--text-sub);margin-bottom:6px;}
+.stat .value{font-size:24px;font-weight:600;font-family:'JetBrains Mono',monospace;}
+.stat.red .value{color:var(--red);}
+.stat.green .value{color:var(--green);}
+.stat.amber .value{color:var(--amber);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;color:var(--text-sub);font-weight:500;padding:8px 6px;border-bottom:1px solid var(--line);font-size:12px;}
+td{padding:6px;border-bottom:1px solid #EEF0F3;vertical-align:middle;}
+td input{padding:6px 8px;font-size:13px;}
+.del{cursor:pointer;color:var(--text-sub);font-size:12px;}
+.del:hover{color:var(--red);}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:10px 20px;border-radius:8px;font-size:13px;opacity:0;transition:0.25s;pointer-events:none;z-index:50;}
+.toast.show{opacity:1;}
+.empty{color:var(--text-sub);font-size:13px;text-align:center;padding:2rem 0;}
+.chart-wrap{position:relative;height:250px;}
+.lot-summary{display:flex;flex-wrap:wrap;gap:10px 24px;font-size:13px;}
+.lot-summary div span{display:block;color:var(--text-sub);font-size:11px;margin-bottom:2px;}
+.lot-summary div b{font-family:'JetBrains Mono',monospace;font-size:14px;}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;background:var(--navy);color:#fff;}
+.total-row{background:#F8F9FB;font-weight:600;}
+.lot-picker{display:flex;gap:8px;align-items:center;margin-bottom:14px;}
+.lot-picker select{flex:1;}
+.lot-row{cursor:pointer;}
+.lot-row:hover{background:#F8F9FB;}
+.loc-item{display:flex;gap:4px;margin-bottom:4px;align-items:center;flex-wrap:wrap;}
+.loc-item input[type="number"]{padding:6px 6px;text-align:center;}
+.loc-add{color:var(--navy);font-weight:600;cursor:pointer;font-size:12px;}
+.loc-add:hover{text-decoration:underline;}
+.loc-del{cursor:pointer;color:var(--text-sub);padding:0 4px;}
+.loc-del:hover{color:var(--red);}
+.defect-cat{font-size:12px;font-weight:600;color:var(--text-sub);margin:16px 0 6px;text-transform:uppercase;letter-spacing:0.3px;}
+.defect-cat:first-child{margin-top:0;}
+.defect-cat.chip{color:var(--navy);}
+.defect-cat.solder{color:var(--amber);}
+.defect-btn.chip-type{border-left:3px solid var(--navy);}
+.defect-btn.solder-type{border-left:3px solid var(--amber);}
+textarea{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:6px;font-size:14px;font-family:inherit;background:#fff;color:var(--text);resize:vertical;min-height:52px;}
+textarea:focus{outline:none;border-color:var(--steel);}
+.type-toggle{display:flex;gap:8px;}
+.type-btn{flex:1;padding:10px;border:1.5px solid var(--line);border-radius:6px;text-align:center;font-size:14px;font-weight:500;cursor:pointer;background:#fff;}
+.type-btn.selected{background:var(--navy);color:#fff;border-color:var(--navy);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>AOI 불량 관리 대시보드</h1>
+    <p>로트 등록 → 불량 입력 → 통계, 종이 검사일보 프로토타입 v2</p>
+  </header>
+  <div class="tabs">
+    <div class="tab active" data-tab="lot">로트 등록</div>
+    <div class="tab" data-tab="input">불량 입력</div>
+    <div class="tab" data-tab="stats">통계 대시보드</div>
+  </div>
+
+  <div class="content">
+
+    <div id="tab-lot">
+      <div class="card">
+        <h2>새 로트 등록</h2>
+
+        <div class="field">
+          <label>고객사</label>
+          <input id="lCustomer" list="customerList" placeholder="입력 또는 선택">
+          <datalist id="customerList"></datalist>
+          <div style="font-size:12px;color:var(--text-sub);margin-top:4px;">고객사를 정하면 품명/규격이 자동완성돼요</div>
+        </div>
+        <div class="grid2">
+          <div class="field">
+            <label>품명</label>
+            <input id="lItem" list="itemList" placeholder="선택 또는 직접 입력">
+            <datalist id="itemList"></datalist>
+          </div>
+          <div class="field">
+            <label>규격(ver)</label>
+            <input id="lSpec" list="specList" placeholder="선택 또는 직접 입력">
+            <datalist id="specList"></datalist>
+          </div>
+        </div>
+
+        <div class="grid3">
+          <div class="field">
+            <label>날짜</label>
+            <input id="lDate" type="date">
+          </div>
+          <div class="field">
+            <label>검사자</label>
+            <input id="lInspector" placeholder="이름을 입력해주세요">
+          </div>
+          <div class="field">
+            <label>검사수량</label>
+            <input id="lQty" type="number" min="0" placeholder="검사수량을 입력해주세요">
+          </div>
+        </div>
+
+        <div class="grid2" style="margin-bottom:12px;">
+          <div class="field" style="margin-bottom:0;">
+            <label>라인</label>
+            <div class="line-toggle" id="lineToggle">
+              <div class="line-btn" data-line="A라인">A라인</div>
+              <div class="line-btn" data-line="B라인">B라인</div>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>차수</label>
+            <div class="type-toggle" id="chaToggle">
+              <div class="type-btn" data-cha="1차">1차</div>
+              <div class="type-btn" data-cha="2차">2차</div>
+            </div>
+          </div>
+        </div>
+        <div class="grid2">
+          <div class="field" style="margin-bottom:0;">
+            <label>구분</label>
+            <div class="type-toggle" id="prodTypeToggle">
+              <div class="type-btn" data-type="양산">양산</div>
+              <div class="type-btn" data-type="샘플">샘플</div>
+            </div>
+          </div>
+          <div class="field" style="margin-bottom:0;">
+            <label>검사면</label>
+            <div class="type-toggle" id="topbotToggle">
+              <div class="type-btn" data-tb="TOP">TOP</div>
+              <div class="type-btn" data-tb="BOT">BOT</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;">
+          <button class="btn-primary" id="registerLotBtn" disabled>로트 등록하고 불량 입력하기 →</button>
+          <span id="qtyWarning" class="warn-msg" style="display:none;"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>오늘 등록된 로트</h2>
+        <div id="lotList"></div>
+      </div>
+    </div>
+
+    <div id="tab-input" style="display:none;">
+      <div class="card">
+        <div class="lot-picker">
+          <label style="margin:0;white-space:nowrap;">작업 중인 로트</label>
+          <select id="lotPicker"></select>
+        </div>
+        <div class="lot-summary" id="lotSummary"></div>
+      </div>
+
+      <div class="card">
+        <h2>제품 특이사항</h2>
+        <textarea id="lotNote" placeholder="예: 이번 로트 습기 노출 이력 있음, 특정 구간 재작업 등"></textarea>
+      </div>
+
+      <div class="card">
+        <h2>불량 유형 선택 (탭하면 리스트에 추가됩니다)</h2>
+        <div id="defectGrid"></div>
+      </div>
+
+      <div class="card">
+        <h2>불량 리스트</h2>
+        <div id="defectListTable"></div>
+      </div>
+    </div>
+
+    <div id="tab-stats" style="display:none;">
+      <div class="card">
+        <h2>로트별 요약</h2>
+        <div class="chart-wrap"><canvas id="lotSummaryChart" role="img" aria-label="로트별 불량 EA 막대 그래프"></canvas></div>
+        <div id="lotSummaryTable" style="margin-top:14px;"></div>
+      </div>
+      <div class="grid4" style="margin-bottom:1.25rem;">
+        <div class="stat"><div class="label">총 로트 수</div><div class="value" id="statLots">0</div></div>
+        <div class="stat"><div class="label">누적 검사수량</div><div class="value" id="statInspect">0</div></div>
+        <div class="stat red"><div class="label">누적 불량EA</div><div class="value" id="statBad">0</div></div>
+        <div class="stat amber"><div class="label">전체 불량률</div><div class="value" id="statRate">0%</div></div>
+      </div>
+      <div class="card">
+        <h2>불량 유형별 파레토 (건수 합계 기준)</h2>
+        <div class="chart-wrap"><canvas id="paretoChart" role="img" aria-label="불량 유형별 건수 합계 막대 그래프"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>일별 불량 발생 추이</h2>
+        <div class="chart-wrap"><canvas id="trendChart" role="img" aria-label="일별 불량 EA 추이 막대 그래프"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>주간별 불량 발생 추이</h2>
+        <div class="chart-wrap"><canvas id="weeklyChart" role="img" aria-label="주간별 불량 EA 추이 막대 그래프"></canvas></div>
+      </div>
+      <div class="card">
+        <h2>월별 불량 발생 추이</h2>
+        <div class="chart-wrap"><canvas id="monthlyChart" role="img" aria-label="월별 불량 EA 추이 막대 그래프"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// 막대 그래프 위에 값을 그려주는 커스텀 플러그인 (외부 CDN 플러그인 의존 없이 항상 동작하도록 직접 구현)
+const barValueLabelPlugin = {
+  id: 'barValueLabel',
+  afterDatasetsDraw(chart){
+    const {ctx} = chart;
+    chart.data.datasets.forEach((dataset, dsIndex)=>{
+      const meta = chart.getDatasetMeta(dsIndex);
+      if(meta.type !== 'bar' || meta.hidden) return;
+      meta.data.forEach((bar, i)=>{
+        const value = dataset.data[i];
+        if(value===undefined || value===null || value===0) return;
+        ctx.save();
+        ctx.fillStyle = '#1A2531';
+        ctx.font = '600 11px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(value, bar.x, bar.y - 4);
+        ctx.restore();
+      });
+    });
+  }
+};
+Chart.register(barValueLabelPlugin);
+const CUSTOMER_DATA = {"넥사이트": [{"item": "EGRSP", "spec": "EGRSP_1S_KF_DV"}, {"item": "EGRSP", "spec": "I2C/I3C Card"}, {"item": "LANSING-S", "spec": "CPU 358H"}, {"item": "EGRSP", "spec": "2S_KF_DV"}, {"item": "EGRSP", "spec": "1S_KF_DV"}], "필그림(네오셈)": [{"item": "CIB main B/D", "spec": "EA00 DDR5 완제품"}, {"item": "CIB dut B/D", "spec": "EA00 DDR5"}, {"item": "CIB main B/D", "spec": "EA00 DDR5 test용"}, {"item": "CIB main B/D", "spec": "CF00 GDDR7 266B"}, {"item": "CIB dut B/D", "spec": "CF00 GDDR7 266B"}, {"item": "CIB B/D", "spec": "CF00 GDDR7 266B"}, {"item": "CIB B/D", "spec": "EA00 DDR5"}], "SMEC(TBSTest)": [{"item": "SITE B/D", "spec": "HSU320-C3"}, {"item": "SITE B/D", "spec": "FPU768-A0"}], "DI": [{"item": "SITE B/D", "spec": "P132A103 SA"}, {"item": "SITE B/D", "spec": "P132A103 SB"}, {"item": "EXTENSION", "spec": "P132A110"}, {"item": "DL602A-Half", "spec": "P145E002_SE"}, {"item": "DL602A-Half", "spec": "P131E013SI"}, {"item": "DL602A-Half", "spec": "P203E001 SC-1"}], "YJ Tech": [{"item": "02-69917-00A", "spec": "20-69917-00A"}, {"item": "02-62416-00A", "spec": "20-62416-00D"}, {"item": "02-65832-00A", "spec": "20-65832-00A"}, {"item": "02-63076-00B", "spec": "02-63076-00B"}, {"item": "02-68831-00A", "spec": "20-68831-00A"}, {"item": "02-67903-00X02", "spec": "20-67903-00B"}, {"item": "02-67907-00X02", "spec": "20-67907-00B"}, {"item": "02-68849-00A", "spec": "20-68849-00A"}, {"item": "02-67222-00A", "spec": "20-67222-00C"}, {"item": "20-2871-01C", "spec": "50-2871-01C"}, {"item": "02-67880-00X01", "spec": "20-67880-00A"}, {"item": "02-67879-00X02", "spec": "20-67879-00A"}, {"item": "02-67758-00X01", "spec": "20-67758-00A"}, {"item": "02-64013-01X01", "spec": "20-64013-01A"}, {"item": "02-67761-00X01", "spec": "20-67761-00A"}, {"item": "02-61586-00B", "spec": "20-61586-00A"}, {"item": "02-61625-00A", "spec": "20-61625-00A"}, {"item": "02-61612-00A", "spec": "20-61612-00B"}, {"item": "02-55987-00D", "spec": "20-55987-00B"}, {"item": "02-69854-00X01", "spec": "20-69854-00A"}, {"item": "02-65627-00B", "spec": "20-65627-00C"}, {"item": "02-64013-00B", "spec": "20-64013-00B"}, {"item": "02-64014-00B", "spec": "02-64014-00B"}, {"item": "02-65625-00A", "spec": "20-65625-00B"}, {"item": "T20-0228-04A", "spec": "T50-0228-04A"}, {"item": "02-67758-00X02", "spec": "20-67758-00B"}, {"item": "02-64013-01B", "spec": "20-64013-01A"}, {"item": "02-68851-00A", "spec": "20-68851-00A"}, {"item": "02-55988-01B", "spec": "F20-55988-00A"}, {"item": "02-67758-00A", "spec": "20-67758-00B"}, {"item": "02-69917-00X01", "spec": "02-69917-00A"}, {"item": "02-67879-00A", "spec": "02-67879-00A"}, {"item": "02-58043-00A", "spec": "02-58043-00B"}, {"item": "02-65624-00B", "spec": "02-65624-00A"}, {"item": "02-63751-00X01", "spec": "02-63751-00A"}, {"item": "02-65832-00A", "spec": "02-65832-00A"}, {"item": "02-67905-00A", "spec": "20-67905-00B"}, {"item": "02-69058-00A", "spec": "20-69058-00A"}, {"item": "02-64013-00C", "spec": "20-64013-00B"}, {"item": "02-64014-00C", "spec": "02-64014-00C"}, {"item": "02-62932-00A", "spec": "20-62932-00A"}, {"item": "02-69548-00X01", "spec": "02-69548-00A"}, {"item": "02-69745-00X01", "spec": "02-69745-00A"}, {"item": "02-70400-00X01", "spec": "02-70400-00A"}, {"item": "02-70266-00X01", "spec": "02-70266-00A"}, {"item": "02-61886-00X02", "spec": "02-61886-00A"}, {"item": "02-57700-00A", "spec": "02-57700-00A"}, {"item": "02-65627-00B", "spec": "02-65627-00B"}, {"item": "02-69843-00X01", "spec": "20-69843-00A"}, {"item": "02-69842-00X01", "spec": "20-69842-00A"}, {"item": "02-57267-00A 02-56267-02A", "spec": "20-57267-00A"}, {"item": "02-67260-00A", "spec": "20-67260-00A"}, {"item": "02-70266-00X01", "spec": "20-70266-00A"}, {"item": "02-67879-00A", "spec": "20-67879-00A"}, {"item": "02-69854-00A", "spec": "20-69854-00A"}, {"item": "02-57145-00A", "spec": "20-57145-00A2"}, {"item": "02-63905-00A", "spec": "20-63905-00A"}, {"item": "02-70400-00X01", "spec": "20-70400-00A"}, {"item": "02-67761-00A", "spec": "20-67761-00B"}, {"item": "02-56105-00A", "spec": "20-56105-00B"}, {"item": "02-57605-00A", "spec": "02-57605-00A"}, {"item": "02-65831-00B", "spec": "20-65831-00A"}, {"item": "02-63751-00X01", "spec": "20-63751-00A"}, {"item": "02-55987-00D", "spec": "02-55987-00D"}, {"item": "02-67788-00A", "spec": "20-67788-00A"}, {"item": "02-67789-00A", "spec": "20-67789-00A"}, {"item": "02-69745-00A", "spec": "20-69745-00A"}]};
+const BASE_CUSTOMERS = ["DI","SMEC(TBSTest)","필그림(네오셈)","넥사이트","YJ Tech","Atek","기타"];
+
+const DEFECT_GROUPS = [
+  { label: "칩/부품 관련", cls: "chip", types: ["미삽","역삽","뒤집힘","맨하탄","칩날림","틀어짐(뒤정렬)"] },
+  { label: "땜(납) 관련", cls: "solder", types: ["냉땜","미납","소납","과납","설납","브릿지(쇼트)"] },
+  { label: "기타", cls: "etc", types: ["부품유실","극성불량","이물","기타"] }
+];
+
+let lots = [];
+let defects = [];
+let currentLotId = null;
+let selectedLine = null;
+let selectedProdType = null;
+let selectedCha = null;
+let selectedTopBot = null;
+let paretoChart, trendChart, weeklyChart, monthlyChart, lotChart;
+
+const DIRECT_INPUT_LABEL = '✏️ 직접입력';
+
+function uniq(arr){ return [...new Set(arr)]; }
+function refreshCustomerList(){
+  const dl = document.getElementById('customerList');
+  dl.innerHTML = BASE_CUSTOMERS.map(c=>`<option value="${c}">`).join('');
+}
+function refreshItemAndSpecLists(){
+  const customer = document.getElementById('lCustomer').value.trim();
+  const entries = CUSTOMER_DATA[customer] || [];
+  const itemDl = document.getElementById('itemList');
+  const specDl = document.getElementById('specList');
+  itemDl.innerHTML = uniq(entries.map(e=>e.item).filter(Boolean)).map(v=>`<option value="${v}">`).join('') + `<option value="${DIRECT_INPUT_LABEL}">`;
+  const currentItem = document.getElementById('lItem').value.trim();
+  const matching = entries.filter(e=> !currentItem || e.item===currentItem);
+  const specs = uniq((matching.length?matching:entries).map(e=>e.spec).filter(Boolean));
+  specDl.innerHTML = specs.map(v=>`<option value="${v}">`).join('') + `<option value="${DIRECT_INPUT_LABEL}">`;
+}
+function handleDirectInputMarker(el){
+  if(el.value === DIRECT_INPUT_LABEL){
+    el.value = '';
+    el.focus();
+  }
+}
+document.getElementById('lCustomer').addEventListener('input', refreshItemAndSpecLists);
+document.getElementById('lItem').addEventListener('input', ()=>{
+  handleDirectInputMarker(document.getElementById('lItem'));
+  refreshItemAndSpecLists();
+});
+document.getElementById('lSpec').addEventListener('input', ()=>{
+  handleDirectInputMarker(document.getElementById('lSpec'));
+});
+function setupToggle(containerId, selector, attr, onChange){
+  document.getElementById(containerId).addEventListener('click', (e)=>{
+    const btn = e.target.closest(selector); if(!btn) return;
+    if(btn.classList.contains('selected')){
+      btn.classList.remove('selected');
+      onChange(null);
+    } else {
+      document.querySelectorAll('#'+containerId+' '+selector).forEach(b=>b.classList.toggle('selected', b===btn));
+      onChange(btn.dataset[attr]);
+    }
+  });
+}
+setupToggle('lineToggle', '.line-btn', 'line', (v)=>{ selectedLine = v; });
+setupToggle('prodTypeToggle', '.type-btn', 'type', (v)=>{ selectedProdType = v; });
+setupToggle('chaToggle', '.type-btn', 'cha', (v)=>{ selectedCha = v; });
+setupToggle('topbotToggle', '.type-btn', 'tb', (v)=>{ selectedTopBot = v; });
+
+// datalist 입력창은 값이 이미 채워져 있으면 다시 클릭해도 추천목록이 안 뜨는 브라우저 특성이 있어서,
+// focus 시 잠깐 비웠다가 그대로 두면 목록이 뜨고, 아무 것도 안 고르고 벗어나면 원래 값을 복구해줌
+function attachDatalistReopen(id, onRestore){
+  const el = document.getElementById(id);
+  el.addEventListener('focus', ()=>{ el.dataset.prev = el.value; el.value=''; el.dispatchEvent(new Event('input')); });
+  el.addEventListener('blur', ()=>{
+    if(el.value.trim()===''){ el.value = el.dataset.prev || ''; }
+    if(onRestore) onRestore();
+  });
+}
+attachDatalistReopen('lCustomer', refreshItemAndSpecLists);
+attachDatalistReopen('lItem', refreshItemAndSpecLists);
+attachDatalistReopen('lSpec', null);
+
+async function loadData(){
+  try{ const d = await window.storage.get('aoi:lots', true); lots = d ? JSON.parse(d.value) : []; }catch(e){ lots = []; }
+  try{ const d = await window.storage.get('aoi:defects2', true); defects = d ? JSON.parse(d.value) : []; }catch(e){ defects = []; }
+  defects.forEach(d=>{
+    if(!d.locs){ d.locs = d.loc ? [d.loc] : ['']; }
+    if(!d.locs.length) d.locs = [''];
+    // 이전 버전 데이터 이관: locs가 문자열 배열이면 {loc,note,qty} 객체 배열로 변환
+    d.locs = d.locs.map((item, i)=>{
+      if(item && typeof item === 'object') return { loc: item.loc||'', note: item.note||'', qty: Math.max(1, parseInt(item.qty)||1) };
+      return { loc: item||'', note: (i===0 ? (d.note||'') : ''), qty: Math.max(1, parseInt(d.ea)||1) };
+    });
+    delete d.note;
+    delete d.ea;
+  });
+}
+async function saveLots(){ try{ await window.storage.set('aoi:lots', JSON.stringify(lots), true); }catch(e){ console.error(e); } }
+async function saveDefects(){ try{ await window.storage.set('aoi:defects2', JSON.stringify(defects), true); }catch(e){ console.error(e); } }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 1400);
+}
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.addEventListener('click', ()=> switchTab(tab.dataset.tab));
+});
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===name));
+  ['lot','input','stats'].forEach(n=>{ document.getElementById('tab-'+n).style.display = (n===name)?'block':'none'; });
+  if(name==='input') renderInputTab();
+  if(name==='stats') renderStats();
+}
+
+function validateLotForm(){
+  const inspector = document.getElementById('lInspector').value.trim();
+  const qty = parseInt(document.getElementById('lQty').value)||0;
+  const btn = document.getElementById('registerLotBtn');
+  const warn = document.getElementById('qtyWarning');
+  const missing = [];
+  if(!inspector) missing.push('검사자 명을');
+  if(qty<=0) missing.push('검사수량을');
+  if(missing.length){
+    btn.disabled = true;
+    warn.style.display = 'inline';
+    warn.textContent = missing.join(', ') + ' 입력해주세요';
+  } else {
+    btn.disabled = false;
+    warn.style.display = 'none';
+    warn.textContent = '';
+  }
+}
+document.getElementById('lInspector').addEventListener('input', validateLotForm);
+document.getElementById('lQty').addEventListener('input', validateLotForm);
+
+document.getElementById('registerLotBtn').addEventListener('click', async ()=>{
+  const qty = parseInt(document.getElementById('lQty').value)||0;
+  const inspector = document.getElementById('lInspector').value.trim();
+  if(qty<=0 || !inspector){ validateLotForm(); return; }
+  const lot = {
+    id: Date.now()+Math.random(),
+    date: document.getElementById('lDate').value || todayStr(),
+    line: selectedLine,
+    prodType: selectedProdType,
+    customer: document.getElementById('lCustomer').value.trim() || '미입력',
+    item: document.getElementById('lItem').value.trim(),
+    spec: document.getElementById('lSpec').value.trim(),
+    cha: selectedCha,
+    topbot: selectedTopBot,
+    inspector: document.getElementById('lInspector').value.trim(),
+    qty,
+    note: ''
+  };
+  lots.push(lot);
+  await saveLots();
+  currentLotId = lot.id;
+  ['lCustomer','lItem','lSpec','lInspector','lQty'].forEach(id=>document.getElementById(id).value='');
+  refreshItemAndSpecLists();
+  document.querySelectorAll('#lineToggle .line-btn, #chaToggle .type-btn, #prodTypeToggle .type-btn, #topbotToggle .type-btn').forEach(b=>b.classList.remove('selected'));
+  selectedLine = null; selectedProdType = null; selectedCha = null; selectedTopBot = null;
+  validateLotForm();
+  showToast('로트 등록 완료');
+  renderLotList();
+  switchTab('input');
+});
+
+function renderLotList(){
+  const today = todayStr();
+  const list = document.getElementById('lotList');
+  const todays = lots.filter(l=>l.date===today).sort((a,b)=>b.id-a.id);
+  if(todays.length===0){ list.innerHTML = '<div class="empty">오늘 등록된 로트가 없습니다.</div>'; return; }
+  let html = '<table><tr><th>라인</th><th>구분</th><th>고객사</th><th>품명</th><th>규격</th><th>차수</th><th>면</th><th>수량</th></tr>';
+  todays.forEach(l=>{
+    html += `<tr class="lot-row" data-goto="${l.id}"><td><span class="badge">${l.line||'-'}</span></td><td>${l.prodType||'-'}</td><td>${l.customer}</td><td>${l.item||'-'}</td><td>${l.spec||'-'}</td><td>${l.cha||'-'}</td><td>${l.topbot||'-'}</td><td class="mono">${l.qty}</td></tr>`;
+  });
+  html += '</table>';
+  list.innerHTML = html;
+  list.querySelectorAll('tr.lot-row').forEach(tr=>{
+    tr.addEventListener('click', ()=>{ currentLotId = parseFloat(tr.dataset.goto); switchTab('input'); });
+  });
+}
+function buildDefectGrid(){
+  const grid = document.getElementById('defectGrid');
+  grid.innerHTML = '';
+  DEFECT_GROUPS.forEach(group=>{
+    const header = document.createElement('div');
+    header.className = 'defect-cat ' + group.cls;
+    header.textContent = group.label;
+    grid.appendChild(header);
+
+    const row = document.createElement('div');
+    row.className = 'defect-grid';
+    group.types.forEach(type=>{
+      const btn = document.createElement('button');
+      btn.className = 'defect-btn ' + (group.cls==='chip' ? 'chip-type' : group.cls==='solder' ? 'solder-type' : '');
+      btn.textContent = type;
+      btn.addEventListener('click', async ()=>{
+        if(!currentLotId){ showToast('먼저 로트를 등록/선택해주세요'); return; }
+        defects.push({ id: Date.now()+Math.random(), lotId: currentLotId, type, locs:[{loc:'',note:'',qty:1}], sn:'', ts:new Date().toISOString() });
+        await saveDefects();
+        showToast(type + ' 추가됨');
+        renderDefectListTable();
+      });
+      row.appendChild(btn);
+    });
+    grid.appendChild(row);
+  });
+}
+
+function renderInputTab(){
+  const picker = document.getElementById('lotPicker');
+  const sorted = [...lots].sort((a,b)=>b.id-a.id);
+  if(sorted.length===0){
+    picker.innerHTML = '<option>등록된 로트 없음</option>';
+    document.getElementById('lotSummary').innerHTML = '<div class="empty">먼저 로트 등록 탭에서 로트를 등록해주세요.</div>';
+    document.getElementById('defectListTable').innerHTML = '';
+    return;
+  }
+  if(!currentLotId) currentLotId = sorted[0].id;
+  picker.innerHTML = sorted.map(l=>{
+    const label = `${l.date} · ${l.line} · ${l.customer} · ${l.item||'품목미입력'} · ${l.cha}`;
+    return `<option value="${l.id}" ${l.id===currentLotId?'selected':''}>${label}</option>`;
+  }).join('');
+  renderLotSummary();
+  renderDefectListTable();
+}
+document.getElementById('lotPicker').addEventListener('change', (e)=>{
+  currentLotId = parseFloat(e.target.value);
+  renderLotSummary();
+  renderDefectListTable();
+});
+
+function currentLot(){ return lots.find(l=>l.id===currentLotId); }
+
+// 불량 건수: LOC마다 입력한 건수를 모두 합산 (같은 S/N이어도 LOC가 3개면 3건)
+// 불량 개수(EA): 같은 S/N은 하나의 불량 보드로 보고 합산 (S/N 없는 건은 각각 1EA로 집계)
+function lotDefectStats(lotId){
+  const rows = defects.filter(d=>d.lotId===lotId);
+  let caseCount = 0;
+  const snSet = new Set();
+  let noSnCount = 0;
+  rows.forEach(d=>{
+    const locs = (d.locs && d.locs.length) ? d.locs : [{loc:'',note:'',qty:1}];
+    locs.forEach(item=>{ caseCount += Math.max(1, parseInt(item.qty)||1); });
+    if(d.sn && d.sn.trim()) snSet.add(d.sn.trim());
+    else noSnCount += 1;
+  });
+  return { caseCount, eaTotal: snSet.size + noSnCount };
+}
+function lotBadTotal(lotId){
+  return lotDefectStats(lotId).eaTotal;
+}
+
+function renderLotSummary(){
+  const lot = currentLot();
+  const box = document.getElementById('lotSummary');
+  const noteBox = document.getElementById('lotNote');
+  if(!lot){ box.innerHTML=''; noteBox.value=''; return; }
+  box.innerHTML = `
+    <div><span>라인</span><b>${lot.line||'-'}</b></div>
+    <div><span>구분</span><b>${lot.prodType||'-'}</b></div>
+    <div><span>고객사</span><b>${lot.customer}</b></div>
+    <div><span>품명</span><b>${lot.item||'-'}</b></div>
+    <div><span>규격</span><b>${lot.spec||'-'}</b></div>
+    <div><span>차수</span><b>${lot.cha||'-'}</b></div>
+    <div><span>검사면</span><b>${lot.topbot||'-'}</b></div>
+    <div><span>검사자</span><b>${lot.inspector||'-'}</b></div>
+    <div><span>검사수량</span><b>${lot.qty} EA</b></div>
+  `;
+  noteBox.value = lot.note || '';
+}
+document.getElementById('lotNote').addEventListener('change', async ()=>{
+  const lot = currentLot();
+  if(!lot) return;
+  lot.note = document.getElementById('lotNote').value;
+  await saveLots();
+});
+
+function renderDefectListTable(){
+  const lot = currentLot();
+  const box = document.getElementById('defectListTable');
+  if(!lot){ box.innerHTML=''; return; }
+  const rows = defects.filter(d=>d.lotId===lot.id);
+  if(rows.length===0){ box.innerHTML = '<div class="empty">위에서 불량 유형을 탭하면 여기에 추가됩니다.</div>'; return; }
+  let html = '<table><tr><th>불량유형</th><th style="width:110px;">S/N</th><th style="width:320px;">LOC / 특이사항 / 건수</th><th style="width:60px;">합계</th><th style="width:40px;"></th></tr>';
+  const seen = new Set();
+  const dupIds = new Set();
+  rows.forEach(d=>{
+    if(d.sn && d.sn.trim()){
+      const key = d.type+'||'+d.sn.trim();
+      if(seen.has(key)) dupIds.add(d.id); else seen.add(key);
+    }
+  });
+  rows.forEach(d=>{
+    const isDup = dupIds.has(d.id);
+    const locs = (d.locs && d.locs.length) ? d.locs : [{loc:'',note:'',qty:1}];
+    const rowTotal = locs.reduce((s,it)=>s+(Math.max(1, parseInt(it.qty)||1)),0);
+    const locHtml = locs.map((item,i)=>`
+      <div class="loc-item">
+        <input type="text" style="flex:1.3;" data-id="${d.id}" data-locidx="${i}" data-field="locitem" value="${item.loc||''}" placeholder="LOC 예: C8281">
+        <input type="text" style="flex:1.5;" data-id="${d.id}" data-locidx="${i}" data-field="locnote" value="${item.note||''}" placeholder="특이사항">
+        <input type="number" min="1" style="flex:0 0 52px;" data-id="${d.id}" data-locidx="${i}" data-field="locqty" value="${item.qty||1}" title="건수">
+        ${locs.length>1?`<span class="loc-del" data-locdel="${d.id}:${i}">×</span>`:''}
+      </div>`).join('') + `<span class="loc-add" data-locadd="${d.id}">+ LOC 추가</span>`;
+    html += `<tr style="${isDup?'background:var(--red-bg);':''}">
+      <td>${d.type}</td>
+      <td><input type="text" data-id="${d.id}" data-field="sn" value="${d.sn||''}" placeholder="선택">${isDup?'<div style=\"font-size:11px;color:var(--red);margin-top:2px;\">동일 S/N</div>':''}</td>
+      <td>${locHtml}</td>
+      <td class="mono" style="text-align:center;">${rowTotal}건</td>
+      <td><span class="del" data-del="${d.id}">삭제</span></td>
+    </tr>`;
+  });
+  const stats = lotDefectStats(lot.id);
+  const rate = lot.qty>0 ? (stats.eaTotal/lot.qty*100).toFixed(1) : 0;
+  html += `<tr class="total-row"><td colspan="3">불량 건수 (LOC별 건수 합산)</td><td class="mono" colspan="2">${stats.caseCount}건</td></tr>`;
+  html += `<tr class="total-row"><td colspan="3">불량 개수 (EA, S/N별 합산)</td><td class="mono" colspan="2">${stats.eaTotal}EA</td></tr>`;
+  if(dupIds.size>0){
+    html += `<tr><td colspan="5" style="color:var(--text-sub);font-size:12px;padding:6px;">ℹ 동일 S/N이 여러 불량유형에 등록되어 있어요 (${dupIds.size}건). EA는 해당 S/N을 1개로 집계했어요.</td></tr>`;
+  }
+  html += `<tr class="total-row"><td colspan="3">불량률 (EA / 검사수량)</td><td class="mono" colspan="2">${rate}%</td></tr>`;
+  html += '</table>';
+  box.innerHTML = html;
+
+  box.querySelectorAll('input[data-field]').forEach(inp=>{
+    inp.addEventListener('change', async ()=>{
+      const d = defects.find(x=>String(x.id)===inp.dataset.id);
+      if(!d) return;
+      if(inp.dataset.field==='locitem'){
+        const idx = parseInt(inp.dataset.locidx);
+        d.locs[idx].loc = inp.value.trim();
+      } else if(inp.dataset.field==='locnote'){
+        const idx = parseInt(inp.dataset.locidx);
+        d.locs[idx].note = inp.value.trim();
+      } else if(inp.dataset.field==='locqty'){
+        const idx = parseInt(inp.dataset.locidx);
+        d.locs[idx].qty = Math.max(1, parseInt(inp.value)||1);
+      } else d[inp.dataset.field] = inp.value.trim();
+      await saveDefects();
+      renderDefectListTable();
+    });
+  });
+  box.querySelectorAll('[data-locadd]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const d = defects.find(x=>String(x.id)===el.dataset.locadd);
+      if(!d) return;
+      d.locs.push({loc:'',note:'',qty:1});
+      await saveDefects();
+      renderDefectListTable();
+    });
+  });
+  box.querySelectorAll('[data-locdel]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const [id, idx] = el.dataset.locdel.split(':');
+      const d = defects.find(x=>String(x.id)===id);
+      if(!d) return;
+      d.locs.splice(parseInt(idx), 1);
+      if(d.locs.length===0) d.locs=[{loc:'',note:'',qty:1}];
+      await saveDefects();
+      renderDefectListTable();
+    });
+  });
+  box.querySelectorAll('[data-del]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      defects = defects.filter(d=>String(d.id)!==el.dataset.del);
+      await saveDefects();
+      renderDefectListTable();
+    });
+  });
+}
+
+
+function renderStats(){
+  const totalQty = lots.reduce((s,l)=>s+l.qty,0);
+  const totalBad = lots.reduce((s,l)=>s+lotBadTotal(l.id), 0);
+  const rate = totalQty>0 ? (totalBad/totalQty*100).toFixed(1) : 0;
+  document.getElementById('statLots').textContent = lots.length;
+  document.getElementById('statInspect').textContent = totalQty.toLocaleString();
+  document.getElementById('statBad').textContent = totalBad.toLocaleString();
+  document.getElementById('statRate').textContent = rate + '%';
+
+  // 로트별 요약 (제일 위, 그래프 + 표)
+  const box = document.getElementById('lotSummaryTable');
+  if(lotChart){ lotChart.destroy(); lotChart = null; }
+  if(lots.length===0){
+    box.innerHTML='<div class="empty">등록된 로트가 없습니다.</div>';
+  } else {
+    const sortedForChart = [...lots].sort((a,b)=>a.id-b.id).slice(-20);
+    const lotLabels = sortedForChart.map(l=> `${l.date}${l.line?(' '+l.line):''}`);
+    const lotBadVals = sortedForChart.map(l=> lotBadTotal(l.id));
+    lotChart = new Chart(document.getElementById('lotSummaryChart'), {
+      type:'bar',
+      data:{ labels: lotLabels, datasets:[{ label:'불량EA', data: lotBadVals, backgroundColor:'#16324F', borderRadius:4, maxBarThickness:32 }] },
+      options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:20 } }, plugins:{ legend:{display:false} },
+        scales:{ y:{ beginAtZero:true, ticks:{precision:0}, grid:{color:'#EEF0F3'} }, x:{ grid:{display:false}, ticks:{autoSkip:true, maxRotation:45, minRotation:0} } } }
+    });
+
+    let html = '<table><tr><th>날짜</th><th>라인</th><th>구분</th><th>고객사</th><th>품명</th><th>규격</th><th>차수</th><th>면</th><th>검사수량</th><th>불량EA</th><th>불량률</th></tr>';
+    [...lots].sort((a,b)=>b.id-a.id).forEach(l=>{
+      const bad = lotBadTotal(l.id);
+      const r = l.qty>0 ? (bad/l.qty*100).toFixed(1) : 0;
+      html += `<tr><td class="mono">${l.date}</td><td>${l.line||'-'}</td><td>${l.prodType||'-'}</td><td>${l.customer}</td><td>${l.item||'-'}</td><td>${l.spec||'-'}</td><td>${l.cha||'-'}</td><td>${l.topbot||'-'}</td><td class="mono">${l.qty}</td><td class="mono">${bad}</td><td class="mono">${r}%</td></tr>`;
+    });
+    html += '</table>';
+    box.innerHTML = html;
+  }
+
+  const typeCounts = {};
+  defects.forEach(d=>{
+    const locs = (d.locs && d.locs.length) ? d.locs : [{qty:1}];
+    const sum = locs.reduce((s,it)=>s+(Math.max(1, parseInt(it.qty)||1)),0);
+    typeCounts[d.type] = (typeCounts[d.type]||0) + sum;
+  });
+  const sortedTypes = Object.entries(typeCounts).sort((a,b)=>b[1]-a[1]);
+
+  if(paretoChart) paretoChart.destroy();
+  paretoChart = new Chart(document.getElementById('paretoChart'), {
+    type:'bar',
+    data:{ labels: sortedTypes.map(s=>s[0]), datasets:[{ label:'건수', data: sortedTypes.map(s=>s[1]), backgroundColor:'#C0392B', borderRadius:4, maxBarThickness:36 }] },
+    options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:20 } }, plugins:{ legend:{display:false} },
+      scales:{ y:{ beginAtZero:true, ticks:{precision:0}, grid:{color:'#EEF0F3'} }, x:{ grid:{display:false} } } }
+  });
+
+  const dayMap = {};
+  lots.forEach(l=>{
+    const bad = lotBadTotal(l.id);
+    if(bad>0) dayMap[l.date] = (dayMap[l.date]||0) + bad;
+  });
+  const days = Object.keys(dayMap).sort().slice(-14);
+
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type:'bar',
+    data:{ labels: days, datasets:[{ label:'불량EA', data: days.map(d=>dayMap[d]), backgroundColor:'#16324F', borderRadius:4, maxBarThickness:36 }] },
+    options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:20 } }, plugins:{ legend:{display:false} },
+      scales:{ y:{ beginAtZero:true, ticks:{precision:0}, grid:{color:'#EEF0F3'} }, x:{ grid:{display:false} } } }
+  });
+
+  function weekKey(dateStr){
+    const d = new Date(dateStr+'T00:00:00');
+    const onejan = new Date(d.getFullYear(),0,1);
+    const week = Math.ceil((((d - onejan) / 86400000) + onejan.getDay()+1)/7);
+    return `${d.getFullYear()}-W${String(week).padStart(2,'0')}`;
+  }
+  const weekMap = {};
+  lots.forEach(l=>{
+    const bad = lotBadTotal(l.id);
+    if(bad>0){ const k = weekKey(l.date); weekMap[k] = (weekMap[k]||0) + bad; }
+  });
+  const weeks = Object.keys(weekMap).sort().slice(-12);
+
+  if(weeklyChart) weeklyChart.destroy();
+  weeklyChart = new Chart(document.getElementById('weeklyChart'), {
+    type:'bar',
+    data:{ labels: weeks, datasets:[{ label:'불량EA', data: weeks.map(w=>weekMap[w]), backgroundColor:'#274A6E', borderRadius:4, maxBarThickness:40 }] },
+    options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:20 } }, plugins:{ legend:{display:false} },
+      scales:{ y:{ beginAtZero:true, ticks:{precision:0}, grid:{color:'#EEF0F3'} }, x:{ grid:{display:false} } } }
+  });
+
+  const monthMap = {};
+  lots.forEach(l=>{
+    const bad = lotBadTotal(l.id);
+    if(bad>0){ const k = l.date.slice(0,7); monthMap[k] = (monthMap[k]||0) + bad; }
+  });
+  const months = Object.keys(monthMap).sort().slice(-12);
+
+  if(monthlyChart) monthlyChart.destroy();
+  monthlyChart = new Chart(document.getElementById('monthlyChart'), {
+    type:'bar',
+    data:{ labels: months, datasets:[{ label:'불량EA', data: months.map(m=>monthMap[m]), backgroundColor:'#D97706', borderRadius:4, maxBarThickness:48 }] },
+    options:{ responsive:true, maintainAspectRatio:false, layout:{ padding:{ top:20 } }, plugins:{ legend:{display:false} },
+      scales:{ y:{ beginAtZero:true, ticks:{precision:0}, grid:{color:'#EEF0F3'} }, x:{ grid:{display:false} } } }
+  });
+}
+
+(async function init(){
+  document.getElementById('lDate').value = todayStr();
+  refreshCustomerList();
+  refreshItemAndSpecLists();
+  buildDefectGrid();
+  validateLotForm();
+  await loadData();
+  renderLotList();
+})();
+</script>
+</body>
+</html>
